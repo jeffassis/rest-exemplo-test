@@ -1,6 +1,10 @@
 package br.com.jeff.rest.exemplo.services;
 
+import br.com.jeff.rest.exemplo.data.vo.v1.PersonVO;
+import br.com.jeff.rest.exemplo.data.vo.v2.PersonVOV2;
 import br.com.jeff.rest.exemplo.exceptions.ResourceNotFoundException;
+import br.com.jeff.rest.exemplo.mapper.ModelMapper;
+import br.com.jeff.rest.exemplo.mapper.custom.PersonMapper;
 import br.com.jeff.rest.exemplo.model.Person;
 import br.com.jeff.rest.exemplo.repository.PersonRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,44 +20,58 @@ public class PersonService {
     @Autowired
     PersonRepository repository;
 
-    public List<Person> findAll() {
+    @Autowired
+    PersonMapper mapper;
+
+    public List<PersonVO> findAll() {
         logger.info("Finding all people!");
 
-        return repository.findAll();
+        return ModelMapper.parseListObjects(repository.findAll(), PersonVO.class);
     }
 
-    public Person findById(Long id) {
-        logger.info("Finding one person!");
+    public PersonVO findById(Long id) {
+        logger.info("Finding one people!");
 
-        return repository.findById(id)
+        var entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No records found for this ID!"));
+        return ModelMapper.parseObject(entity, PersonVO.class);
     }
 
-    public Person create(Person person) {
-        logger.info("Creating one person!");
+    public PersonVO create(PersonVO person) {
+        logger.info("Creating one people!");
 
-        return repository.save(person);
+        var entity = ModelMapper.parseObject(person, Person.class);
+        var model = ModelMapper.parseObject(repository.save(entity), PersonVO.class);
+        return model;
     }
 
-    public Person update(Person person) {
-        logger.info("Update one person!");
+    public PersonVOV2 createV2(PersonVOV2 person) {
+        logger.info("Creating one people!");
 
-        var entity = repository.findById(person.getId())
+        var entity = mapper.convertVoToEntity(person);
+        var model = mapper.convertEntityToVo(repository.save(entity));
+        return model;
+    }
+
+    public PersonVO update(PersonVO PersonVO) {
+        logger.info("Update one people!");
+
+        var entity = repository.findById(PersonVO.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("No records found for this ID!"));
 
-        entity.setFirstName(person.getFirstName());
-        entity.setLastName(person.getLastName());
-        entity.setAddress(person.getAddress());
-        entity.setGender(person.getGender());
+        entity.setFirstName(PersonVO.getFirstName());
+        entity.setLastName(PersonVO.getLastName());
+        entity.setAddress(PersonVO.getAddress());
+        entity.setGender(PersonVO.getGender());
 
-        return repository.save(person);
+        var model = ModelMapper.parseObject(repository.save(entity), PersonVO.class);
+        return model;
     }
 
     public void delete(Long id) {
-        logger.info("Delete one person!");
+        logger.info("Delete one people!");
         var entity = repository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("No records found for this ID!"));
-
         repository.delete(entity);
     }
 }
